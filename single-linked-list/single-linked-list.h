@@ -84,6 +84,7 @@ class SingleLinkedList {
         // Возвращает ссылку на самого себя
         // Инкремент итератора, не указывающего на существующий элемент списка, приводит к неопределённому поведению
         BasicIterator& operator++() noexcept {
+            assert(node_->next_node != nullptr);
             auto hold = node_->next_node;
             node_ = hold;
             return *this;
@@ -103,6 +104,7 @@ class SingleLinkedList {
         // Вызов этого оператора у итератора, не указывающего на существующий элемент списка,
         // приводит к неопределённому поведению
         [[nodiscard]] reference operator*() const noexcept {
+            assert(node_->next_node != nullptr);
             return node_->value;
         }
 
@@ -110,6 +112,7 @@ class SingleLinkedList {
         // Вызов этого оператора у итератора, не указывающего на существующий элемент списка,
         // приводит к неопределённому поведению
         [[nodiscard]] pointer operator->() const noexcept {
+            assert(node_->next_node != nullptr);
             return &(node_->value);
         }
 
@@ -129,23 +132,15 @@ public:
 
     SingleLinkedList(std::initializer_list<Type> values) {
         Node* prev = &head_;
-        for (const auto& value : values) {
-            auto new_node = new Node(value, nullptr);
-            prev->next_node = new_node;
-            prev = new_node;
-        }
+        FillSingleLinkedList(values, prev);
         size_ = values.size();
     }
 
     SingleLinkedList(const SingleLinkedList& other) {
-        //assert(size_ == 0 && head_.next_node == nullptr);
+        assert(size_ == 0 && head_.next_node == nullptr);
         SingleLinkedList tmp;
         Node* prev = &tmp.head_;
-        for (const auto& value : other) {
-            auto new_node = new Node(value, nullptr);
-            prev->next_node = new_node;
-            prev = new_node;
-        }
+        FillSingleLinkedList(other, prev);
         swap(tmp);
         size_ = other.size_;
     }
@@ -173,10 +168,12 @@ public:
     }
 
     void PopFront() noexcept {
-        auto pop_element = head_.next_node;
-        head_.next_node = pop_element->next_node;
-        delete pop_element;
-        --size_;
+        if (!IsEmpty()) {
+            auto pop_element = head_.next_node;
+            head_.next_node = pop_element->next_node;
+            delete pop_element;
+            --size_;
+        }
     }
 
     void Clear() {
@@ -202,6 +199,7 @@ public:
     using ConstIterator = BasicIterator<const Type>;
 
     Iterator InsertAfter(ConstIterator pos, const Type& value) {
+        assert(pos != nullptr);
         auto new_node = new Node(value, pos.node_->next_node);
         pos.node_->next_node = new_node;
         ++size_;
@@ -209,6 +207,7 @@ public:
     }
 
     Iterator EraseAfter(ConstIterator pos) noexcept {
+        assert(pos != nullptr);
         auto delete_node = pos.node_->next_node;
         pos.node_->next_node = delete_node->next_node;
         delete delete_node;
@@ -276,6 +275,15 @@ private:
     // Фиктивный узел, используется для вставки "перед первым элементом"
     Node head_;
     size_t size_;
+
+    template <typename Container>
+    void FillSingleLinkedList(const Container& other, Node* prev) {
+        for (const auto& value : other) {
+            auto new_node = new Node(value, nullptr);
+            prev->next_node = new_node;
+            prev = new_node;
+        }
+    }
 };
 
 template <typename Type>
